@@ -1,0 +1,100 @@
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model ServiceProvider {
+  id             Int      @id @default(autoincrement())
+  name           String
+  specialty      String?
+  rating         Float    @default(0)
+  reviewsCount   Int      @default(0) @map("reviews_count")
+  price          String?
+  availability   String?
+  image          String?
+  specialization String?
+  experience     String?
+  location       String?
+  avatar         String?
+  phone          String?
+  email          String?
+  address        String?
+  about          String?  @db.Text
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  languages       ProviderLanguage[]
+  specializations ProviderSpecialization[]
+  reviewsList     Review[]
+  timeSlots       TimeSlot[]
+  appointments    Appointment[]
+
+  @@map("service_providers")
+}
+
+model ProviderLanguage {
+  id         Int             @id @default(autoincrement())
+  language   String
+  providerId Int             @map("provider_id")
+  provider   ServiceProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@map("provider_languages")
+}
+
+model ProviderSpecialization {
+  id             Int             @id @default(autoincrement())
+  specialization String
+  providerId     Int             @map("provider_id")
+  provider       ServiceProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@map("provider_specializations")
+}
+
+model Review {
+  id         Int             @id @default(autoincrement())
+  name       String
+  rating     Int
+  date       String
+  comment    String          @db.Text
+  avatar     String?
+  providerId Int             @map("provider_id")
+  provider   ServiceProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  createdAt  DateTime        @default(now()) @map("created_at")
+
+  @@map("reviews")
+}
+
+model TimeSlot {
+  id         Int             @id @default(autoincrement())
+  time       String
+  day        String?
+  providerId Int             @map("provider_id")
+  provider   ServiceProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@map("time_slots")
+}
+
+model Appointment {
+  id            Int             @id @default(autoincrement())
+  patientName   String          @map("patient_name")
+  patientEmail  String?         @map("patient_email")
+  patientPhone  String?         @map("patient_phone")
+  date          DateTime
+  time          String
+  service       String
+  duration      String?
+  status        String          @default("Pending")
+  paymentAmount Float           @default(0) @map("payment_amount")
+  paymentStatus String          @default("Unpaid") @map("payment_status")
+  notes         String?         @db.Text
+  providerId    Int             @map("provider_id")
+  provider      ServiceProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime        @updatedAt @map("updated_at")
+
+  @@map("appointments")
+}
