@@ -1,5 +1,5 @@
 datasource db {
-  provider = "mysql"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -7,8 +7,59 @@ generator client {
   provider = "prisma-client-js"
 }
 
+model User {
+  id            String  @id @default(cuid())
+  name          String?
+  email         String  @unique
+  emailVerified Boolean @default(false) @map("email_verified")
+  image         String?
+  password      String
+  role          String  @default("user")
+  phone         String?
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  account      Account[]
+  session      Session[]
+  appointments Appointment[]
+  reviews      Review[]
+
+  @@map("users")
+}
+
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String  @map("user_id")
+  type               String
+  provider           String
+  providerAccountId  String  @map("provider_account_id")
+  refreshToken       String? @map("refresh_token") @db.Text
+  accessToken        String? @map("access_token") @db.Text
+  expiresAt          Int?    @map("expires_at")
+  tokenType          String? @map("token_type")
+  scope              String?
+  idToken            String? @map("id_token") @db.Text
+  sessionState       String? @map("session_state")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String  @id @default(cuid())
+  sessionToken String  @unique @map("session_token")
+  userId       String  @map("user_id")
+  expires      DateTime
+  user         User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
 model ServiceProvider {
   id             Int      @id @default(autoincrement())
+  userId         String?  @map("user_id")
   name           String
   specialty      String?
   rating         Float    @default(0)
@@ -21,9 +72,10 @@ model ServiceProvider {
   location       String?
   avatar         String?
   phone          String?
-  email          String?
+  email          String   @unique
   address        String?
   about          String?  @db.Text
+  verified       Boolean  @default(false)
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
@@ -33,6 +85,8 @@ model ServiceProvider {
   timeSlots       TimeSlot[]
   appointments    Appointment[]
 
+  @@index([email])
+  @@index([userId])
   @@map("service_providers")
 }
 
@@ -56,6 +110,8 @@ model ProviderSpecialization {
 
 model Review {
   id         Int             @id @default(autoincrement())
+  userId     String?         @map("user_id")
+  user       User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
   name       String
   rating     Int
   date       String
@@ -65,6 +121,8 @@ model Review {
   provider   ServiceProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
   createdAt  DateTime        @default(now()) @map("created_at")
 
+  @@index([providerId])
+  @@index([userId])
   @@map("reviews")
 }
 
@@ -80,6 +138,8 @@ model TimeSlot {
 
 model Appointment {
   id            Int             @id @default(autoincrement())
+  userId        String?         @map("user_id")
+  user          User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
   patientName   String          @map("patient_name")
   patientEmail  String?         @map("patient_email")
   patientPhone  String?         @map("patient_phone")
@@ -96,5 +156,8 @@ model Appointment {
   createdAt     DateTime        @default(now()) @map("created_at")
   updatedAt     DateTime        @updatedAt @map("updated_at")
 
+  @@index([providerId])
+  @@index([userId])
+  @@index([date])
   @@map("appointments")
 }

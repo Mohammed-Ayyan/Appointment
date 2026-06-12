@@ -1,4 +1,5 @@
 const { PrismaClient } = require("@prisma/client");
+const bcrypt = require("bcryptjs");
 
 const prisma = new PrismaClient();
 
@@ -11,7 +12,33 @@ async function main() {
   await prisma.timeSlot.deleteMany();
   await prisma.providerSpecialization.deleteMany();
   await prisma.providerLanguage.deleteMany();
+  await prisma.session.deleteMany();
+  await prisma.account.deleteMany();
   await prisma.serviceProvider.deleteMany();
+  await prisma.user.deleteMany();
+
+  // Create users
+  const hashedPassword = await bcrypt.hash("demo123", 10);
+
+  const demoUser = await prisma.user.create({
+    data: {
+      name: "Demo User",
+      email: "demo@example.com",
+      password: hashedPassword,
+      role: "user",
+      emailVerified: true,
+    },
+  });
+
+  const demoProvider = await prisma.user.create({
+    data: {
+      name: "Dr. Michael Brown",
+      email: "provider@example.com",
+      password: hashedPassword,
+      role: "provider",
+      emailVerified: true,
+    },
+  });
 
   // Create Service Providers
   const provider1 = await prisma.serviceProvider.create({
