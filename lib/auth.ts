@@ -13,17 +13,19 @@ const baseURL =
     ? `https://${process.env.VERCEL_URL}`
     : process.env.V0_RUNTIME_URL);
 
+const trustedOrigins = [
+  baseURL,
+  process.env.VERCEL_PROJECT_PRODUCTION_URL &&
+    `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`,
+  process.env.VERCEL_URL && `https://${process.env.VERCEL_URL}`,
+  process.env.V0_RUNTIME_URL,
+].filter(Boolean) as string[];
+
 export const auth = betterAuth({
   database: pool,
-  secret: process.env.BETTER_AUTH_SECRET!,
+  secret: process.env.NEON_AUTH_COOKIE_SECRET || process.env.BETTER_AUTH_SECRET!,
   baseURL,
-  trustedOrigins: [
-    baseURL,
-    process.env.VERCEL_PROJECT_PRODUCTION_URL &&
-      `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`,
-    process.env.VERCEL_URL && `https://${process.env.VERCEL_URL}`,
-    process.env.V0_RUNTIME_URL,
-  ].filter(Boolean) as string[],
+  trustedOrigins,
   emailAndPassword: {
     enabled: true,
     minPasswordLength: 8,
