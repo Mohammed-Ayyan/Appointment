@@ -23,7 +23,6 @@ export default function AuthForm({ mode }: AuthFormProps) {
     email: "",
     password: "",
     name: "",
-    accountType: "patient",
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -99,41 +98,19 @@ export default function AuthForm({ mode }: AuthFormProps) {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {isSignUp && (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="name">Full Name</Label>
-                  <Input
-                    id="name"
-                    name="name"
-                    type="text"
-                    placeholder="John Doe"
-                    value={formData.name}
-                    onChange={handleChange}
-                    required
-                    disabled={loading}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="accountType">Account Type</Label>
-                  <select
-                    id="accountType"
-                    name="accountType"
-                    value={formData.accountType}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        accountType: e.target.value,
-                      }))
-                    }
-                    disabled={loading}
-                    className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground placeholder:text-muted-foreground disabled:opacity-50"
-                  >
-                    <option value="patient">Patient</option>
-                    <option value="provider">Service Provider</option>
-                  </select>
-                </div>
-              </>
+              <div className="space-y-2">
+                <Label htmlFor="name">Full Name</Label>
+                <Input
+                  id="name"
+                  name="name"
+                  type="text"
+                  placeholder="John Doe"
+                  value={formData.name}
+                  onChange={handleChange}
+                  required
+                  disabled={loading}
+                />
+              </div>
             )}
 
             <div className="space-y-2">
