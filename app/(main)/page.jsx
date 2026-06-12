@@ -39,8 +39,9 @@ export default function Home() {
       const res = await fetch(`/api/providers?${params.toString()}`);
       if (!res.ok) throw new Error("Failed to fetch providers");
       const data = await res.json();
-      setProviders(Array.isArray(data.providers) ? data.providers : []);
+      setProviders(Array.isArray(data.data) ? data.data : []);
     } catch (err) {
+      console.error("[v0] Error fetching providers:", err);
       setError(err.message);
       setProviders([]);
     } finally {

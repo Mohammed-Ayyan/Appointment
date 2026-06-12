@@ -13,6 +13,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useUser } from "@/hooks/useUser";
 
 const navItems = [
   { title: "Browse", href: "/", icon: Home },
@@ -22,6 +23,7 @@ const navItems = [
 
 export default function MainLayout({ children }) {
   const pathname = usePathname();
+  const { user, loading } = useUser();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   // Close mobile menu on route change
@@ -50,11 +52,11 @@ export default function MainLayout({ children }) {
         <div className="px-4 py-4">
           <div className="flex items-center gap-3 rounded-xl bg-muted/50 p-3 border border-border/50">
             <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 text-primary font-semibold text-sm">
-              SA
+              {loading ? "?" : (user?.name?.split(" ").map(n => n[0]).join("").toUpperCase() || "U")}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">Sarah Anderson</p>
-              <p className="text-[11px] text-muted-foreground">Premium Member</p>
+              <p className="text-sm font-medium truncate">{loading ? "Loading..." : (user?.name || "Guest")}</p>
+              <p className="text-[11px] text-muted-foreground">{user?.role === "admin" ? "Admin" : "Premium Member"}</p>
             </div>
             <div className="w-2 h-2 rounded-full bg-emerald-500" />
           </div>
@@ -127,11 +129,11 @@ export default function MainLayout({ children }) {
         <div className="px-4 py-4">
           <div className="flex items-center gap-3 rounded-xl bg-muted/50 p-3 border border-border/50">
             <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 text-primary font-semibold text-sm">
-              SA
+              {loading ? "?" : (user?.name?.split(" ").map(n => n[0]).join("").toUpperCase() || "U")}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">Sarah Anderson</p>
-              <p className="text-[11px] text-muted-foreground">Premium Member</p>
+              <p className="text-sm font-medium truncate">{loading ? "Loading..." : (user?.name || "Guest")}</p>
+              <p className="text-[11px] text-muted-foreground">{user?.role === "admin" ? "Admin" : "Premium Member"}</p>
             </div>
           </div>
         </div>
