@@ -37,22 +37,37 @@ export default function AuthForm({ mode }: AuthFormProps) {
 
     try {
       if (mode === "sign-in") {
-        await authClient.signIn.email({
+        const response = await authClient.signIn.email({
           email: formData.email,
           password: formData.password,
         });
+        
+        if (!response) {
+          setError("Sign in failed. Please check your credentials.");
+          return;
+        }
       } else {
-        await authClient.signUp.email({
+        const response = await authClient.signUp.email({
           email: formData.email,
           password: formData.password,
           name: formData.name,
         });
+        
+        if (!response) {
+          setError("Failed to create account. Please try again.");
+          return;
+        }
       }
 
       router.push("/");
       router.refresh();
     } catch (err: any) {
-      setError(err.message || "Authentication failed. Please try again.");
+      console.error("[v0] Auth error:", err);
+      setError(
+        err?.response?.data?.message ||
+        err.message ||
+        "Authentication failed. Please try again."
+      );
     } finally {
       setLoading(false);
     }

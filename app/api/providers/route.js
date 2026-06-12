@@ -1,69 +1,25 @@
 import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
-import { validateProviderForm } from "@/lib/validation";
+import { pool } from "@/lib/db";
 
 // GET /api/providers — List all providers
 export async function GET(request) {
+  const client = await pool.connect();
   try {
     const { searchParams } = new URL(request.url);
-    const category = searchParams.get("category");
-    const location = searchParams.get("location");
-    const search = searchParams.get("search");
     const sort = searchParams.get("sort") || "recommended";
 
-    const where = {};
+    let query = `
+      SELECT id, name, specialty, rating, "reviewsCount", price, availability, image, location
+      FROM "service_provider"
+      ORDER BY rating DESC
+      LIMIT 50
+    `;
 
-    if (category && category !== "all") {
-      where.specialty = { contains: category };
-    }
-
-    if (location && location !== "all") {
-      where.location = { contains: location };
-    }
-
-    if (search) {
-      where.OR = [
-        { name: { contains: search } },
-        { specialty: { contains: search } },
-        { location: { contains: search } },
-      ];
-    }
-
-    let orderBy = {};
-    switch (sort) {
-      case "rating":
-        orderBy = { rating: "desc" };
-        break;
-      case "price-low":
-        orderBy = { price: "asc" };
-        break;
-      case "price-high":
-        orderBy = { price: "desc" };
-        break;
-      default:
-        orderBy = { rating: "desc" };
-    }
-
-    const providers = await prisma.serviceProvider.findMany({
-      where,
-      orderBy,
-      select: {
-        id: true,
-        name: true,
-        specialty: true,
-        rating: true,
-        reviewsCount: true,
-        price: true,
-        availability: true,
-        image: true,
-        location: true,
-      },
-    });
-
-    return NextResponse.json({ 
+    const result = await client.query(query);
+    return NextResponse.json({
       success: true,
-      data: providers,
-      count: providers.length 
+      data: result.rows,
+      count: result.rows.length,
     }, { status: 200 });
   } catch (error) {
     console.error("GET /api/providers error:", error);
@@ -71,64 +27,56 @@ export async function GET(request) {
       { success: false, error: "Failed to fetch providers" },
       { status: 500 }
     );
+  } finally {
+    client.release();
   }
 }
 
 // POST /api/providers — Create a new provider
 export async function POST(request) {
+  const client = await pool.connect();
   try {
     const body = await request.json();
+    const { name, email, specialty, phone, location } = body;
 
-    // Validate input
-    const validation = validateProviderForm(body);
-    if (!validation.valid) {
+    if (!name || !email) {
       return NextResponse.json(
-        { success: false, error: "Validation failed", errors: validation.errors },
+        { success: false, error: "Name and email are required" },
         { status: 400 }
       );
     }
 
     // Check for duplicate email
-    const existingProvider = await prisma.serviceProvider.findUnique({
-      where: { email: body.email },
-    });
+    const existing = await client.query(
+      'SELECT id FROM "service_provider" WHERE email = $1',
+      [email]
+    );
 
-    if (existingProvider) {
+    if (existing.rows.length > 0) {
       return NextResponse.json(
         { success: false, error: "A provider with this email already exists" },
         { status: 409 }
       );
     }
 
-    const provider = await prisma.serviceProvider.create({
-      data: {
-        name: body.name,
-        email: body.email,
-        specialty: body.specialty || null,
-        specialization: body.specialization || null,
-        rating: body.rating || 0,
-        reviewsCount: body.reviewsCount || 0,
-        price: body.price || null,
-        availability: body.availability || null,
-        image: body.image || null,
-        experience: body.experience || null,
-        location: body.location || null,
-        avatar: body.avatar || null,
-        phone: body.phone || null,
-        address: body.address || null,
-        about: body.about || null,
-      },
-    });
+    const result = await client.query(
+      `INSERT INTO "service_provider" (name, email, specialty, phone, location, "createdAt", "updatedAt")
+       VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+       RETURNING id, name, email, specialty, phone, location`,
+      [name, email, specialty || null, phone || null, location || null]
+    );
 
-    return NextResponse.json({ 
-      success: true,
-      data: provider 
-    }, { status: 201 });
+    return NextResponse.json(
+      { success: true, data: result.rows[0] },
+      { status: 201 }
+    );
   } catch (error) {
     console.error("POST /api/providers error:", error);
     return NextResponse.json(
       { success: false, error: "Failed to create provider" },
       { status: 500 }
     );
+  } finally {
+    client.release();
   }
 }
