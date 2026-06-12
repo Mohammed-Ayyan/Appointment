@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { validateAppointmentForm } from "@/lib/validation";
 
 // GET /api/appointments — List appointments with filters
 export async function GET(request) {
@@ -8,6 +9,7 @@ export async function GET(request) {
     const status = searchParams.get("status");
     const providerId = searchParams.get("providerId");
     const date = searchParams.get("date");
+    const limit = parseInt(searchParams.get("limit") || "50", 10);
 
     const where = {};
 
@@ -34,13 +36,18 @@ export async function GET(request) {
         },
       },
       orderBy: [{ date: "asc" }, { time: "asc" }],
+      take: limit,
     });
 
-    return NextResponse.json({ appointments }, { status: 200 });
+    return NextResponse.json({ 
+      success: true,
+      data: appointments,
+      count: appointments.length 
+    }, { status: 200 });
   } catch (error) {
     console.error("GET /api/appointments error:", error);
     return NextResponse.json(
-      { message: "Failed to fetch appointments", error: error.message },
+      { success: false, error: "Failed to fetch appointments" },
       { status: 500 }
     );
   }
@@ -51,24 +58,28 @@ export async function POST(request) {
   try {
     const body = await request.json();
 
-    if (!body.patientName || !body.providerId || !body.date || !body.time || !body.service) {
+    // Validate input using centralized validation
+    const validation = validateAppointmentForm(body);
+    if (!validation.valid) {
       return NextResponse.json(
-        { message: "Missing required fields: patientName, providerId, date, time, service" },
+        { success: false, error: "Validation failed", errors: validation.errors },
         { status: 400 }
       );
     }
 
+    // Verify provider exists
     const provider = await prisma.serviceProvider.findUnique({
       where: { id: parseInt(body.providerId, 10) },
     });
 
     if (!provider) {
       return NextResponse.json(
-        { message: "Provider not found" },
+        { success: false, error: "Provider not found" },
         { status: 404 }
       );
     }
 
+    // Create appointment
     const appointment = await prisma.appointment.create({
       data: {
         patientName: body.patientName,
@@ -91,11 +102,14 @@ export async function POST(request) {
       },
     });
 
-    return NextResponse.json({ appointment }, { status: 201 });
+    return NextResponse.json({ 
+      success: true, 
+      data: appointment 
+    }, { status: 201 });
   } catch (error) {
     console.error("POST /api/appointments error:", error);
     return NextResponse.json(
-      { message: "Failed to create appointment", error: error.message },
+      { success: false, error: "Failed to create appointment" },
       { status: 500 }
     );
   }

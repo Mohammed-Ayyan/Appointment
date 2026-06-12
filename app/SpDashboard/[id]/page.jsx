@@ -45,7 +45,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import StatusBadge from "@/components/status-badge";
 
-export default function AppointmentsDashboard({ params }) {
+export default function ProviderDashboard({ params }) {
   const resolvedParams = use(params);
   const providerId = resolvedParams.id;
 

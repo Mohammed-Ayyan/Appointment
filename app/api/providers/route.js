@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { validateProviderForm } from "@/lib/validation";
 
 // GET /api/providers — List all providers
 export async function GET(request) {
@@ -59,11 +60,15 @@ export async function GET(request) {
       },
     });
 
-    return NextResponse.json({ providers }, { status: 200 });
+    return NextResponse.json({ 
+      success: true,
+      data: providers,
+      count: providers.length 
+    }, { status: 200 });
   } catch (error) {
     console.error("GET /api/providers error:", error);
     return NextResponse.json(
-      { message: "Failed to fetch providers", error: error.message },
+      { success: false, error: "Failed to fetch providers" },
       { status: 500 }
     );
   }
@@ -74,16 +79,31 @@ export async function POST(request) {
   try {
     const body = await request.json();
 
-    if (!body.name) {
+    // Validate input
+    const validation = validateProviderForm(body);
+    if (!validation.valid) {
       return NextResponse.json(
-        { message: "Provider name is required" },
+        { success: false, error: "Validation failed", errors: validation.errors },
         { status: 400 }
+      );
+    }
+
+    // Check for duplicate email
+    const existingProvider = await prisma.serviceProvider.findUnique({
+      where: { email: body.email },
+    });
+
+    if (existingProvider) {
+      return NextResponse.json(
+        { success: false, error: "A provider with this email already exists" },
+        { status: 409 }
       );
     }
 
     const provider = await prisma.serviceProvider.create({
       data: {
         name: body.name,
+        email: body.email,
         specialty: body.specialty || null,
         specialization: body.specialization || null,
         rating: body.rating || 0,
@@ -95,17 +115,19 @@ export async function POST(request) {
         location: body.location || null,
         avatar: body.avatar || null,
         phone: body.phone || null,
-        email: body.email || null,
         address: body.address || null,
         about: body.about || null,
       },
     });
 
-    return NextResponse.json({ provider }, { status: 201 });
+    return NextResponse.json({ 
+      success: true,
+      data: provider 
+    }, { status: 201 });
   } catch (error) {
     console.error("POST /api/providers error:", error);
     return NextResponse.json(
-      { message: "Failed to create provider", error: error.message },
+      { success: false, error: "Failed to create provider" },
       { status: 500 }
     );
   }
