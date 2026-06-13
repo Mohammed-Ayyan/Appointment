@@ -66,7 +66,7 @@ export default function Home() {
           Find Your <span className="gradient-text">Perfect Provider</span>
         </h1>
         <p className="text-muted-foreground text-sm sm:text-base max-w-2xl">
-          Browse top-rated healthcare professionals and book your appointment in
+          Browse top-rated service providers and book your appointment in
           minutes.
         </p>
       </div>
