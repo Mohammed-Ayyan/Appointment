@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
-import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
 
+/**
+ * This endpoint is deprecated. Use Better Auth client directly instead.
+ * Kept for backwards compatibility with existing integrations.
+ * @deprecated Use /auth/sign-in through Better Auth instead
+ */
 export async function POST(request) {
   try {
     const body = await request.json();
@@ -16,75 +20,51 @@ export async function POST(request) {
       );
     }
 
-    // Find user
-    const user = await prisma.user.findUnique({
-      where: { email },
-    });
-
-    if (!user) {
-      return NextResponse.json(
-        { message: "Invalid email or password" },
-        { status: 401 }
-      );
-    }
-
-    // Verify password
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-
-    if (!isPasswordValid) {
-      return NextResponse.json(
-        { message: "Invalid email or password" },
-        { status: 401 }
-      );
-    }
-
-    // Create JWT token
-    const token = jwt.sign(
+    // Use Better Auth's sign-in endpoint
+    const response = await auth.api.signInEmail(
       {
-        userId: user.id,
-        email: user.email,
-        role: user.role,
+        email,
+        password,
       },
-      process.env.JWT_SECRET || "your-secret-key-change-in-production",
-      { expiresIn: "7d" }
+      {
+        headers: await headers(),
+      }
     );
 
-    // Create session
-    await prisma.session.create({
-      data: {
-        sessionToken: token,
-        userId: user.id,
-        expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-      },
+    if (!response) {
+      return NextResponse.json(
+        { message: "Invalid email or password" },
+        { status: 401 }
+      );
+    }
+
+    // Get session to return user data
+    const session = await auth.api.getSession({
+      headers: await headers(),
     });
 
-    const response = NextResponse.json(
+    if (!session?.user) {
+      return NextResponse.json(
+        { message: "Sign in failed" },
+        { status: 401 }
+      );
+    }
+
+    return NextResponse.json(
       {
         user: {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
+          id: session.user.id,
+          name: session.user.name,
+          email: session.user.email,
+          role: session.user.role,
         },
-        token,
       },
       { status: 200 }
     );
-
-    response.cookies.set({
-      name: "auth_token",
-      value: token,
-      maxAge: 7 * 24 * 60 * 60,
-      secure: process.env.NODE_ENV === "production",
-      httpOnly: true,
-      sameSite: "strict",
-    });
-
-    return response;
   } catch (error) {
     console.error("POST /api/auth/signin error:", error);
     return NextResponse.json(
-      { message: "Failed to sign in", error: error.message },
+      { message: "Failed to sign in" },
       { status: 500 }
     );
   }

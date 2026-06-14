@@ -39,8 +39,9 @@ export default function Home() {
       const res = await fetch(`/api/providers?${params.toString()}`);
       if (!res.ok) throw new Error("Failed to fetch providers");
       const data = await res.json();
-      setProviders(Array.isArray(data.providers) ? data.providers : []);
+      setProviders(Array.isArray(data.data) ? data.data : []);
     } catch (err) {
+      console.error("[v0] Error fetching providers:", err);
       setError(err.message);
       setProviders([]);
     } finally {
@@ -65,7 +66,7 @@ export default function Home() {
           Find Your <span className="gradient-text">Perfect Provider</span>
         </h1>
         <p className="text-muted-foreground text-sm sm:text-base max-w-2xl">
-          Browse top-rated healthcare professionals and book your appointment in
+          Browse top-rated service providers and book your appointment in
           minutes.
         </p>
       </div>

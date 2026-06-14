@@ -1,30 +1,11 @@
-import { useEffect, useState } from "react";
+import { useSession } from "@/lib/auth-client";
 
 export function useUser() {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const { data, isPending, error } = useSession();
 
-  useEffect(() => {
-    async function fetchUser() {
-      try {
-        const response = await fetch("/api/auth/me");
-        if (response.ok) {
-          const data = await response.json();
-          setUser(data.user);
-        } else {
-          setUser(null);
-        }
-      } catch (err) {
-        setError(err);
-        setUser(null);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchUser();
-  }, []);
-
-  return { user, loading, error };
+  return {
+    user: data?.user || null,
+    loading: isPending,
+    error,
+  };
 }

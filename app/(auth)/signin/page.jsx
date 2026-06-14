@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Sparkles, Eye, EyeOff, CheckCircle } from "lucide-react";
+import { authClient } from "@/lib/auth-client";
 
 function SignInForm() {
   const router = useRouter();
@@ -42,29 +43,22 @@ function SignInForm() {
     setLoading(true);
 
     try {
-      const response = await fetch("/api/auth/signin", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+      const response = await authClient.signIn.email({
+        email: formData.email,
+        password: formData.password,
       });
 
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || "Sign in failed");
+      if (!response) {
+        setError("Sign in failed. Please check your credentials.");
+        return;
       }
 
-      const data = await response.json();
-
-      // Redirect based on user role
-      if (data.user.role === "provider") {
-        router.push(`/SpDashboard/${data.user.id}`);
-      } else if (data.user.role === "admin") {
-        router.push("/admin/dashboard");
-      } else {
-        router.push("/");
-      }
+      // Successful sign-in, redirect to home
+      router.push("/");
+      router.refresh();
     } catch (err) {
-      setError(err.message);
+      console.error("[v0] Sign-in error:", err);
+      setError(err?.message || "Failed to sign in");
     } finally {
       setLoading(false);
     }
@@ -194,10 +188,13 @@ function SignInForm() {
               Demo Credentials:
             </p>
             <p className="text-xs text-muted-foreground">
-              Email: <code className="bg-background px-1">demo@example.com</code>
+              Patient: <code className="bg-background px-1">john@example.com</code> / <code className="bg-background px-1">password123</code>
             </p>
             <p className="text-xs text-muted-foreground">
-              Password: <code className="bg-background px-1">demo123</code>
+              Admin: <code className="bg-background px-1">admin@example.com</code> / <code className="bg-background px-1">password123</code>
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Provider: <code className="bg-background px-1">emily.johnson@example.com</code> / <code className="bg-background px-1">password123</code>
             </p>
           </div>
         </div>

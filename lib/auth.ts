@@ -31,9 +31,10 @@ export const auth = betterAuth({
     minPasswordLength: 8,
   },
   advanced: {
-    defaultCookieAttributes:
-      process.env.NODE_ENV === "development"
-        ? { sameSite: "none", secure: true }
-        : undefined,
+    defaultCookieAttributes: {
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      httpOnly: true,
+    },
   },
 });

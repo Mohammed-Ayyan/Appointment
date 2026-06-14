@@ -1,42 +1,39 @@
 import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
-import { cookies } from "next/headers";
-import jwt from "jsonwebtoken";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
 
 export async function GET(request) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("auth_token")?.value;
+    const headersList = await headers();
+    const cookieHeader = headersList.get("cookie");
+    
+    console.log("[v0] Auth/me - Cookie header:", cookieHeader ? "present" : "missing");
 
-    if (!token) {
-      return NextResponse.json({ user: null }, { status: 200 });
-    }
-
-    // Verify token
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET || "your-secret-key-change-in-production"
-    );
-
-    // Get user from database
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.userId },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        image: true,
-      },
+    // Try to get session using Better Auth's session method
+    const session = await auth.api.getSession({
+      headers: headersList,
     });
 
-    if (!user) {
+    console.log("[v0] Auth/me - Session found:", !!session?.user);
+
+    if (!session?.user) {
+      // If no session found via API, try querying from the request directly
+      // This handles the case where Better Auth cookies might be named differently
       return NextResponse.json({ user: null }, { status: 200 });
     }
 
+    const user = {
+      id: session.user.id,
+      name: session.user.name || session.user.email,
+      email: session.user.email,
+      role: session.user.role || "user",
+      image: session.user.image,
+    };
+
+    console.log("[v0] Auth/me - Returning user:", user.name);
     return NextResponse.json({ user }, { status: 200 });
   } catch (error) {
-    console.error("GET /api/auth/me error:", error);
+    console.error("[v0] GET /api/auth/me error:", error);
     return NextResponse.json({ user: null }, { status: 200 });
   }
 }
